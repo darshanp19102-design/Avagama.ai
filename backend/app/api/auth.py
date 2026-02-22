@@ -35,7 +35,11 @@ async def signup(payload: SignupRequest):
     users = collection('users')
     exists = await users.find_one({'email': payload.email.lower()})
     if exists:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email already registered')
+        if exists.get('email_verified', False):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email already registered')
+        else:
+            # Overwrite unverified user if they try to sign up again within the 5m TTL
+            await users.delete_one({'_id': exists['_id']})
 
     doc = {
         'first_name': payload.first_name.strip(),
@@ -61,8 +65,8 @@ async def signup(payload: SignupRequest):
         error_msg = str(exc)
 
     if not email_sent:
-        # Rollback the user creation
-        await users.delete_one({'_id': result.inserted_id})
+        # User requested the record be kept in DB for manual verification
+        # just raise the HTTP error to the frontend.
         raise HTTPException(status_code=400, detail=f"Failed to send verification email: {error_msg}")
 
     await collection('email_logs').insert_one(

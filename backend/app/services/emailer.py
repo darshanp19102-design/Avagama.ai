@@ -73,7 +73,7 @@ def send_verification_email(to_email: str, verify_link: str) -> bool:
 </p>
 <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0 16px;"/>
 <p style="font-size:12px;color:#b0b5bc;margin:0;">
-  If you did not create this account, you can safely ignore this email.
+  This link is valid for 5 minutes. If you did not create this account, you can safely ignore this email.
 </p>"""
 
     msg = MIMEMultipart('alternative')
@@ -81,7 +81,7 @@ def send_verification_email(to_email: str, verify_link: str) -> bool:
     msg['From'] = settings.SMTP_FROM
     msg['To'] = to_email
     msg.attach(MIMEText(
-        f"Welcome to Avagama.ai!\n\nPlease verify your email by clicking the link below:\n{verify_link}\n\n"
+        f"Welcome to Avagama.ai!\n\nPlease verify your email by clicking the link below (valid for 5 minutes):\n{verify_link}\n\n"
         f"If you did not create this account, you can ignore this message.",
         'plain'
     ))
