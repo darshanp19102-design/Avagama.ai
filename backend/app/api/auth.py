@@ -51,11 +51,16 @@ async def signup(payload: SignupRequest):
     verify_token = create_email_verification_token(user_id)
     verify_link = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
 
-    email_sent = False
     try:
         email_sent = send_verification_email(doc['email'], verify_link)
-    except Exception:
-        email_sent = False
+        if not email_sent:
+            # Delete the inserted doc if it explicitly returns False before throwing
+            await users.delete_one({'_id': result.inserted_id})
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to send verification email. Please ensure your email is valid.')
+    except Exception as exc:
+        # Rollback the user creation
+        await users.delete_one({'_id': result.inserted_id})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Invalid email or email server error: {str(exc)}')
 
     await collection('email_logs').insert_one(
         {
@@ -90,9 +95,9 @@ async def login(payload: LoginRequest):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
 
     user_id = str(user['_id'])
-    # Auto-verify users who haven't verified yet (allow access)
+    # Strict check for email verification
     if not user.get('email_verified', False):
-        await collection('users').update_one({'_id': user['_id']}, {'$set': {'email_verified': True}})
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Please verify your email address to log in.')
 
     return {
         'access_token': create_access_token(user_id),

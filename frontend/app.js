@@ -328,8 +328,8 @@ function authPage(mode) {
       if (isSignup) {
         if (f.password !== f.confirm) throw new Error('Passwords do not match');
         await api('/api/auth/signup', 'POST', { first_name: f.first_name, last_name: f.last_name, company_name: f.company_name, email: f.email, password: f.password });
-        msgEl.className = 'msg-area msg-success'; msgEl.textContent = 'Account created! Please sign in.';
-        setTimeout(() => go('/login'), 1500);
+        msgEl.className = 'msg-area msg-success'; msgEl.textContent = 'Account created! Please check your email to verify your address.';
+        setTimeout(() => go('/login'), 2500);
         return;
       }
       const data = await api('/api/auth/login', 'POST', { email: f.email, password: f.password });
