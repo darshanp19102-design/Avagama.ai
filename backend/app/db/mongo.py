@@ -108,6 +108,12 @@ async def init_db() -> None:
     db = get_db()
     try:
         await db.users.create_index('email', unique=True)
+        # Auto-delete unverified users exactly 5 mins (300s) after creation
+        await db.users.create_index(
+            [('created_at', 1)],
+            expireAfterSeconds=300,
+            partialFilterExpression={'email_verified': False}
+        )
         await db.evaluations.create_index([('user_id', 1), ('created_at', -1)])
         await db.domain_use_cases.create_index([('user_id', 1), ('created_at', -1)])
         await db.company_use_cases.create_index([('user_id', 1), ('created_at', -1)])
