@@ -87,7 +87,7 @@ def send_verification_email(to_email: str, verify_link: str) -> bool:
     ))
     msg.attach(MIMEText(_email_wrapper(body_html), 'html'))
 
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
         server.starttls()
         server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
@@ -132,7 +132,7 @@ def send_password_reset_email(to_email: str, reset_link: str) -> bool:
     ))
     msg.attach(MIMEText(_email_wrapper(body_html), 'html'))
 
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
         server.starttls()
         server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
