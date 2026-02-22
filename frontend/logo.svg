@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 45">
+  <defs>
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a528a" />
+      <stop offset="45%" stop-color="#7a528a" />
+      <stop offset="100%" stop-color="#4ab0a5" />
+    </linearGradient>
+  </defs>
+  <style>
+    .avagama { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 500; font-size: 34px; fill: #9e6eb1; letter-spacing: -0.6px; }
+    .tm { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 400; font-size: 10px; fill: #a1a1a1; }
+  </style>
+  <text x="0" y="34" class="avagama">Avagama</text>
+  <path d="M140,30.5 v1.5 M154,13.5 a9,9 0 1,0 0,18 a9,9 0 1,0 0,-18 M164.5,13.5 v18 M172,18 v13.5 M172,11 v1.5" fill="none" stroke="url(#aiGradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="181" y="16" class="tm">TM</text>
+</svg>
