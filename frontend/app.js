@@ -43,7 +43,11 @@ async function api(path, method = 'GET', body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || 'Request failed');
+  if (!res.ok) {
+    let msg = data.detail || 'Request failed';
+    if (Array.isArray(msg)) msg = msg.map(e => e.msg).join(', ');
+    throw new Error(msg);
+  }
   return data;
 }
 
