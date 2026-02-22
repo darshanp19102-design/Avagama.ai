@@ -134,11 +134,6 @@ function topNav(active) {
     </div>
   </nav>
   <div class="tb-meta">
-    <div class="growth-pill">
-      <span class="gp-name">⚡ Growth pack</span><span class="gp-sep">|</span>
-      <span>${rem} evaluations left</span><span class="gp-sep">|</span>
-      <span class="gp-days">8 days left</span>
-    </div>
     <button class="tb-icon-btn" title="Help">${ic('headset')}</button>
     <div class="drop-wrap">
       <button class="tb-user" id="userBtn">${init}</button>

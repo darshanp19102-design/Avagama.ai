@@ -12,8 +12,22 @@ def can_send_email() -> bool:
     return bool(settings.SMTP_HOST and settings.SMTP_USERNAME and settings.SMTP_PASSWORD and settings.SMTP_FROM)
 
 
+# Hardcoding Base64 SVG so email clients (Gmail, Outlook) bypass remote image proxy blocking
+SVG_BASE64 = (
+    "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgNDUi"
+    "Pg0KICA8c3R5bGU+DQogICAgLnRleHRPbmUgeyBmb250LWZhbWlseTogJ0ludGVyJywgQXJpYWwsIHNh"
+    "bnMtc2VyaWY7IGZvbnQtd2VpZ2h0OiA2MDA7IGZvbnQtc2l6ZTogMzJweDsgZmlsbDogIzk4NTFBNTsg"
+    "bGV0dGVyLXNwYWNpbmc6IC0xLjVweDsgfQ0KICAgIC50ZXh0VHdvIHsgZm9udC1mYW1pbHk6ICdOdW5p"
+    "dG8nLCAidmFyZWxhIHJvdW5kIiwgc2Fucy1zZXJpZjsgZm9udC13ZWlnaHQ6IDQwMDsgZm9udC1zaXpl"
+    "OiAzNnB4OyBmaWxsOiAjNUVCRkIyOyB9DQogICAgLnRtIHsgZm9udC1mYW1pbHk6ICdJbnRlcicsIEFy"
+    "aWFsLCBzYW5zLXNlcmlmOyBmb250LXdlaWdodDogNDAwOyBmb250LXNpemU6IDEwcHg7IGZpbGw6ICNi"
+    "MGIwYjA7IH0NCiAgPC9zdHlsZT4NCg0KICA8dGV4dCB4PSIwIiB5PSIzNCIgY2xhc3M9InRleHRPbmUi"
+    "PkF2YWdhbWE8L3RleHQ+DQogIDx0ZXh0IHg9IjE0MCIgeT0iMzQiIGNsYXNzPSJ0ZXh0VHdvIj4uYWk8"
+    "L3RleHQ+DQogIDx0ZXh0IHg9IjE4MSIgeT0iMTYiIGNsYXNzPSJ0bSI+VE08L3RleHQ+DQo8L3N2Zz4NCg=="
+)
+
 LOGO_HTML = (
-    f'<img src="{settings.FRONTEND_URL}/logo.svg" alt="Avagama.ai" style="height:36px; display:block; margin:0 auto;" />'
+    f'<img src="data:image/svg+xml;base64,{SVG_BASE64}" alt="Avagama.ai" style="height:36px; display:block; margin:0 auto;" />'
 )
 
 
