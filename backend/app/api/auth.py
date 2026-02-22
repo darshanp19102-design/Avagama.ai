@@ -51,16 +51,19 @@ async def signup(payload: SignupRequest):
     verify_token = create_email_verification_token(user_id)
     verify_link = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
 
+    error_msg = None
     try:
         email_sent = send_verification_email(doc['email'], verify_link)
         if not email_sent:
-            # Delete the inserted doc if it explicitly returns False before throwing
-            await users.delete_one({'_id': result.inserted_id})
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to send verification email. Please ensure your email is valid.')
+            error_msg = "Please ensure your SMTP settings (PORT, PASSWORD, etc.) are configured in Render."
     except Exception as exc:
+        email_sent = False
+        error_msg = str(exc)
+
+    if not email_sent:
         # Rollback the user creation
         await users.delete_one({'_id': result.inserted_id})
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Invalid email or email server error: {str(exc)}')
+        raise HTTPException(status_code=400, detail=f"Failed to send verification email: {error_msg}")
 
     await collection('email_logs').insert_one(
         {
