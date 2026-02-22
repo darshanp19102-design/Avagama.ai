@@ -110,9 +110,6 @@ function logo(h = 24) {
 function logoLarge() {
   return `<img src="/logo.svg" alt="Avagama.AI" class="logo-img logo-img-lg" style="height:36px;" />`;
 }
-function logoEmailHtml() {
-  return `<span style="font-family:'Inter',Arial,sans-serif;font-weight:600;font-size:28px;color:#b260d0;letter-spacing:-0.5px;">Avagama<span style="font-family:'Nunito','Varela Round','Arial Rounded MT Bold',sans-serif;color:#5ebfb2">.ai</span><sup style="font-size:10px;color:#b0b0b0;font-weight:400;">TM</sup></span>`;
-}
 
 /* ── Top Nav ── */
 function topNav(active) {

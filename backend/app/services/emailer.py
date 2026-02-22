@@ -17,8 +17,8 @@ def can_send_email() -> bool:
 LOGO_HTML = (
     '<div style="text-align:center;">'
     '<span style="font-family:\'Inter\',Arial,sans-serif;font-weight:600;'
-    'font-size:32px;color:#9851A5;letter-spacing:-1.5px;">'
-    'Avagama<span style="font-family:\'Nunito\',\'Varela Round\',sans-serif;font-weight:400;font-size:36px;color:#5EBFB2;letter-spacing:0px;">.ai</span>'
+    'font-size:32px;color:#7a528a;letter-spacing:-1.5px;">'
+    'Avagama<span style="font-family:\'Nunito\',\'Varela Round\',sans-serif;font-weight:400;font-size:36px;color:#4ab0a5;letter-spacing:0px;">.ai</span>'
     '<sup style="font-size:10px;color:#b0b0b0;font-weight:400;margin-left:2px;">TM</sup></span>'
     '</div>'
 )

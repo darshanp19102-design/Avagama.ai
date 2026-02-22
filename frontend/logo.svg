@@ -7,7 +7,7 @@
     </linearGradient>
   </defs>
   <style>
-    .avagama { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 500; font-size: 34px; fill: #9e6eb1; letter-spacing: -0.6px; }
+    .avagama { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 500; font-size: 34px; fill: #7a528a; letter-spacing: -0.6px; }
     .tm { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 400; font-size: 10px; fill: #a1a1a1; }
   </style>
   <text x="0" y="34" class="avagama">Avagama</text>
