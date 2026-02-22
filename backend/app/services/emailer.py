@@ -114,7 +114,7 @@ def send_password_reset_email(to_email: str, reset_link: str) -> bool:
 </p>
 <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0 16px;"/>
 <p style="font-size:12px;color:#b0b5bc;margin:0;">
-  This link is valid for 60 minutes. If you did not request a password reset, you can safely ignore this email.
+  This link is valid for 5 minutes. If you did not request a password reset, you can safely ignore this email.
 </p>"""
 
     msg = MIMEMultipart('alternative')
@@ -123,7 +123,7 @@ def send_password_reset_email(to_email: str, reset_link: str) -> bool:
     msg['To'] = to_email
     msg.attach(MIMEText(
         f"You requested a password reset for your Avagama.ai account.\n\n"
-        f"Click the link below to reset your password (valid for 60 minutes):\n{reset_link}\n\n"
+        f"Click the link below to reset your password (valid for 5 minutes):\n{reset_link}\n\n"
         f"If you did not request this, you can safely ignore this email.",
         'plain'
     ))

@@ -36,6 +36,6 @@ def decode_token(token: str) -> dict | None:
 
 
 def create_password_reset_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=60)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
     payload = {'sub': subject, 'exp': expire, 'type': 'password_reset'}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
