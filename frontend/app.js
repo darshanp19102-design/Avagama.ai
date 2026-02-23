@@ -838,7 +838,7 @@ function evaluatingScreen() {
 async function submitEvalForm(formData) {
   go('/evaluating');
   try {
-    const res = await fetch('/api/evaluations', {
+    const res = await fetch(`${API_URL}/api/evaluations`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${state.token}` },
       body: formData,
