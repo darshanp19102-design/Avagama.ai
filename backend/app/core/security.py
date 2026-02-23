@@ -23,7 +23,7 @@ def create_access_token(subject: str) -> str:
 
 
 def create_email_verification_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_VERIFY_EXPIRE_MINUTES)
     payload = {'sub': subject, 'exp': expire, 'type': 'verify_email'}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -36,6 +36,7 @@ def decode_token(token: str) -> dict | None:
 
 
 def create_password_reset_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    # We can use the same setting or add a new one; using EMAIL_VERIFY_EXPIRE_MINUTES for now
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_VERIFY_EXPIRE_MINUTES)
     payload = {'sub': subject, 'exp': expire, 'type': 'password_reset'}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
