@@ -124,15 +124,11 @@ async def submit_evaluation(
 
     agent_response = None
     content = None
-    status_text = 'Completed'
-    agent_error = None
     try:
         agent_response = await call_agent(settings.PROCESS_AGENT_ID, formatted)
         content = extract_content(agent_response)
     except Exception as exc:
-        status_text = 'Fallback'
-        agent_error = {'detail': str(exc)}
-        content = fallback_content(process_name, description, frequency, exception_rate, risk_tolerance, compliance_sensitivity)
+        raise HTTPException(status_code=502, detail=f"Mistral AI agent failed: {str(exc)}") from exc
 
     doc = {
         'user_id': current_user['id'],
@@ -152,8 +148,8 @@ async def submit_evaluation(
         'formatted_message': formatted,
         'agent_response': agent_response,
         'parsed_content': content,
-        'agent_error': agent_error,
-        'status': status_text,
+        'agent_error': None,
+        'status': 'Completed',
         'created_at': datetime.now(timezone.utc),
     }
     result = await collection('evaluations').insert_one(doc)
