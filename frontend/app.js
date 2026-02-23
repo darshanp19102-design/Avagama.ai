@@ -1,6 +1,6 @@
 /* ── Globals ── */
 const app = document.getElementById('app');
-const API_URL = window.__APP_ENV__?.API_URL || '';
+const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://avagama-ai.onrender.com';
 
 const state = {
   token: localStorage.getItem('token'),
