@@ -1089,7 +1089,7 @@ async function evaluationsPage() {
       state.evalPerPage = Number(e.target.value); state.evalPage = 1; renderEvalPage();
     });
     document.getElementById('cmpBtn').onclick = () => {
-      if (selCount < 2) { alert('Select at least 2 evaluations to compare'); return; }
+      if (state.selectedIds.size < 2) { alert('Select at least 2 evaluations to compare'); return; }
       state.compareRows = rows.filter(r => state.selectedIds.has(r.id));
       go('/compare');
     };
@@ -1240,10 +1240,32 @@ function extractUC(resp) {
   if (Array.isArray(resp)) return resp;
   // { use_cases: [...] } (from fallback or parsed Mistral)
   if (Array.isArray(resp?.use_cases)) return resp.use_cases;
-  // { agent_response: { use_cases: [...] } } (from backend doc stored before extracting)
+  // { agent_response: { ... } } (from backend doc stored before extracting)
   if (resp?.agent_response) return extractUC(resp.agent_response);
-  // Other common keys
+  // Other common keys top level
   for (const key of ['items', 'results', 'data']) if (Array.isArray(resp[key])) return resp[key];
+
+  // Recursive search for an array named 'use_cases' anywhere in the object structure
+  function findDeepArray(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    if (Array.isArray(obj.use_cases)) return obj.use_cases;
+    for (const val of Object.values(obj)) {
+      if (val && typeof val === 'object') {
+        if (Array.isArray(val)) {
+          // If we found an array of objects that look like use cases
+          if (val.length > 0 && typeof val[0] === 'object' && (val[0].title || val[0].use_case || val[0].name)) return val;
+        } else {
+          const found = findDeepArray(val);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  const deepRes = findDeepArray(resp);
+  if (deepRes) return deepRes;
+
   // Try parsing Mistral text content
   try {
     let txt = (resp?.choices?.[0]?.message?.content || '').trim();
@@ -1252,7 +1274,10 @@ function extractUC(resp) {
     else txt = txt.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
 
     const p = JSON.parse(txt);
-    return Array.isArray(p) ? p : (Array.isArray(p?.use_cases) ? p.use_cases : []);
+    if (Array.isArray(p)) return p;
+    // Aggressive deep search on parsed JSON as well
+    const deepP = findDeepArray(p);
+    return deepP || [];
   } catch { return []; }
 }
 function starHtml(rating) {
