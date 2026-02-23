@@ -42,6 +42,13 @@ async function api(path, method = 'GET', body) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  if (res.status === 401 && path !== '/api/auth/login') {
+    logout();
+    go('/login');
+    throw new Error('Session expired. Please log in again.');
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     let msg = data.detail || 'Request failed';
