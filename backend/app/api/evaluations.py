@@ -128,7 +128,7 @@ async def submit_evaluation(
         agent_response = await call_agent(settings.PROCESS_AGENT_ID, formatted)
         content = extract_content(agent_response)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Mistral AI agent failed: {str(exc)}") from exc
+        raise HTTPException(status_code=502, detail="The AI service is temporarily unavailable. Please try again later.") from exc
 
     doc = {
         'user_id': current_user['id'],

@@ -27,7 +27,7 @@ async def discover_domain(payload: DomainRequest, current_user=Depends(get_curre
     try:
         response = await call_agent(settings.USE_CASE_AGENT_ID, message)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Mistral AI agent failed: {str(exc)}") from exc
+        raise HTTPException(status_code=502, detail="The AI service is temporarily unavailable. Please try again later.") from exc
         
     doc = {
         'user_id': current_user['id'],
@@ -48,7 +48,7 @@ async def discover_company(payload: CompanyRequest, current_user=Depends(get_cur
     try:
         response = await call_agent(settings.COMPANY_USE_CASE_AGENT_ID, payload.company_name)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Mistral AI agent failed: {str(exc)}") from exc
+        raise HTTPException(status_code=502, detail="The AI service is temporarily unavailable. Please try again later.") from exc
         
     doc = {
         'user_id': current_user['id'],
@@ -56,7 +56,7 @@ async def discover_company(payload: CompanyRequest, current_user=Depends(get_cur
         'formatted_message': payload.company_name,
         'agent_response': response,
         'status': 'Completed',
-        'agent_error': error,
+        'agent_error': None,
         'created_at': datetime.now(timezone.utc),
     }
     await collection('company_use_cases').insert_one(doc)
