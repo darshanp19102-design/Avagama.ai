@@ -68,6 +68,23 @@ function logout() {
   go('/login');
 }
 
+/* ── Auto-Logout (10 mins idle) ── */
+let idleTimer;
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  if (state.token) {
+    idleTimer = setTimeout(() => {
+      alert('Your session has expired due to inactivity.');
+      logout();
+    }, 10 * 60 * 1000); // 10 minutes
+  }
+}
+
+// Attach event listeners to reset the timer on user activity
+['mousemove', 'keydown', 'click', 'scroll'].forEach(evt => {
+  document.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
 function bindLinks() {
   document.querySelectorAll('[data-link]').forEach(el => {
     el.onclick = e => { e.preventDefault(); go(el.getAttribute('href')); };
@@ -1463,6 +1480,7 @@ async function companyPage() {
 
 /* ── Router ── */
 async function render() {
+  resetIdleTimer();
   const path = location.pathname;
   if (!state.token && !['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'].includes(path)) return go('/login');
   if (path === '/login') return authPage('login');
