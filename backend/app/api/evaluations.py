@@ -97,6 +97,17 @@ async def submit_evaluation(
     sop_file: UploadFile | None = File(None),
     current_user=Depends(get_current_user),
 ):
+    # Enforce evaluation limits
+    users_col = collection('users')
+    user = await users_col.find_one({'_id': ObjectId(current_user['id'])})
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+    
+    evaluation_count = user.get('evaluation_count', 0)
+    evaluation_limit = user.get('evaluation_limit', 20)
+    if evaluation_count >= evaluation_limit:
+        raise HTTPException(status_code=403, detail='You have reached your evaluation limit.')
+
     # Read SOP file content if provided
     sop_text = ''
     sop_metadata = None
@@ -150,11 +161,19 @@ async def submit_evaluation(
         'parsed_content': content,
         'agent_error': None,
         'status': 'Completed',
+        'is_shortlisted': False,
         'created_at': datetime.now(timezone.utc),
     }
     result = await collection('evaluations').insert_one(doc)
     doc['id'] = str(result.inserted_id)
     doc.pop('_id', None)
+    
+    # Increment user's evaluation count
+    await users_col.update_one(
+        {'_id': ObjectId(current_user['id'])},
+        {'$inc': {'evaluation_count': 1}}
+    )
+    
     return doc
 
 
@@ -181,6 +200,7 @@ async def my_evaluations(current_user=Depends(get_current_user)):
                 'fitment': content.get('fitment'),
                 'llm_type': llm_type,
                 'status': item.get('status', 'Completed'),
+                'is_shortlisted': item.get('is_shortlisted', False),
             }
         )
     return rows
@@ -212,4 +232,44 @@ async def delete_evaluation(evaluation_id: str, current_user=Depends(get_current
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail='Evaluation not found or not authorized')
     return {'message': 'Evaluation deleted successfully'}
+
+
+from pydantic import BaseModel
+
+class ShortlistRequest(BaseModel):
+    evaluation_ids: list[str]
+    shortlist_status: bool
+
+@router.put('/shortlist')
+async def update_shortlist_status(payload: ShortlistRequest, current_user=Depends(get_current_user)):
+    try:
+        oids = [ObjectId(eid) for eid in payload.evaluation_ids]
+    except InvalidId as exc:
+        raise HTTPException(status_code=400, detail='One or more invalid evaluation ids') from exc
+
+    # Check if any of these evaluations are already shortlisted
+    existing = await collection('evaluations').find(
+        {'_id': {'$in': oids}, 'user_id': current_user['id'], 'is_shortlisted': True}
+    ).to_list(length=1)
+    
+    if existing:
+        raise HTTPException(status_code=400, detail='This evaluation is already shortlisted.')
+
+    result = await collection('evaluations').update_many(
+        {
+            '_id': {'$in': oids},
+            'user_id': current_user['id']
+        },
+        {
+            '$set': {
+                'is_shortlisted': True,
+                'status': 'Shortlisted'
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail='No evaluations found or not authorized')
+        
+    return {'message': f'Shortlist status updated for {result.modified_count} evaluations'}
 

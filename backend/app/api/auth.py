@@ -14,7 +14,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.mongo import collection
-from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse
+from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserOut
 from app.services.emailer import send_verification_email, send_password_reset_email
 from app.core.security import create_password_reset_token
 
@@ -48,6 +48,8 @@ async def signup(payload: SignupRequest):
         'email': payload.email.lower(),
         'password_hash': hash_password(payload.password),
         'email_verified': False,
+        'evaluation_count': 0,
+        'evaluation_limit': settings.DEFAULT_EVALUATION_LIMIT,
         'created_at': datetime.now(timezone.utc),
     }
     result = await users.insert_one(doc)
@@ -59,7 +61,7 @@ async def signup(payload: SignupRequest):
     try:
         email_sent = send_verification_email(doc['email'], verify_link)
         if not email_sent:
-            error_msg = "Please ensure your SMTP settings (PORT, PASSWORD, etc.) are configured in Render."
+            error_msg = "Please ensure your SMTP settings (PORT, PASSWORD, etc.) are configured."
     except Exception as exc:
         email_sent = False
         error_msg = str(exc)
@@ -89,6 +91,8 @@ async def signup(payload: SignupRequest):
             'company_name': doc['company_name'],
             'email': doc['email'],
             'email_verified': doc['email_verified'],
+            'evaluation_count': doc['evaluation_count'],
+            'evaluation_limit': doc['evaluation_limit'],
             'created_at': doc['created_at'],
             'verification_email_sent': email_sent,
         },
@@ -115,8 +119,30 @@ async def login(payload: LoginRequest):
             'company_name': user.get('company_name', ''),
             'email': user['email'],
             'email_verified': True,
+            'evaluation_count': user.get('evaluation_count', 0),
+            'evaluation_limit': user.get('evaluation_limit', settings.DEFAULT_EVALUATION_LIMIT),
+            'support_email': settings.SUPPORT_EMAIL,
             'created_at': user.get('created_at'),
         },
+    }
+
+@router.get('/me', response_model=UserOut)
+async def get_me(current_user=Depends(get_current_user)):
+    user = await collection('users').find_one({'_id': ObjectId(current_user['id'])})
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+        
+    return {
+        'id': str(user['_id']),
+        'first_name': user.get('first_name', ''),
+        'last_name': user.get('last_name', ''),
+        'company_name': user.get('company_name', ''),
+        'email': user['email'],
+        'email_verified': user.get('email_verified', False),
+        'evaluation_count': user.get('evaluation_count', 0),
+        'evaluation_limit': user.get('evaluation_limit', settings.DEFAULT_EVALUATION_LIMIT),
+        'support_email': settings.SUPPORT_EMAIL,
+        'created_at': user.get('created_at'),
     }
 
 

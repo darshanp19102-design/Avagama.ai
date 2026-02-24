@@ -124,6 +124,7 @@ const IC = {
   search: `<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
   arrleft: `<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>`,
   mail: `<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+  help: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
 };
 function ic(name) { return IC[name] || ''; }
 
@@ -138,8 +139,9 @@ function logoLarge() {
 /* ── Top Nav ── */
 function topNav(active) {
   const init = (state.user?.first_name || state.user?.company_name || 'U')[0].toUpperCase();
-  const used = state.dashData?.total_evaluations || 0;
-  const rem = Math.max(0, 100 - used);
+  const limit = state.user?.evaluation_limit ?? 20;
+  const count = state.user?.evaluation_count ?? 0;
+  const rem = Math.max(0, limit - count);
   return `
 <header class="topbar">
   <div id="logoHome" style="cursor:pointer; display:flex; align-items:center;">${logo(24)}</div>
@@ -155,11 +157,28 @@ function topNav(active) {
     </div>
   </nav>
   <div class="tb-meta">
-    <button class="tb-icon-btn" title="Help">${ic('headset')}</button>
+    <button class="tb-icon-btn" title="Help" id="helpNavBtn">${ic('headset')}</button>
     <div class="drop-wrap">
       <button class="tb-user" id="userBtn">${init}</button>
-      <div class="drop-menu${state.userMenuOpen ? ' open' : ''}">
-        <button id="logoutBtn">Logout</button>
+      <div class="drop-menu profile-menu${state.userMenuOpen ? ' open' : ''}" style="width: 260px; padding: 16px;">
+        <div style="display:flex; align-items:center; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px;">
+          <div class="tb-user" style="cursor:default">${init}</div>
+          <div style="flex:1; overflow:hidden;">
+            <div style="font-weight:600; font-size:14px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${state.user?.first_name || state.user?.company_name || 'User'}</div>
+            <div style="color:#6b7280; font-size:12px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${state.user?.email || ''}</div>
+          </div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+            <span style="color:#6b7280">Evaluations Used</span>
+            <span style="font-weight:600">${count} / ${limit}</span>
+          </div>
+          <div style="background:#e5e7eb; height:6px; border-radius:3px; overflow:hidden;">
+            <div style="background:var(--purple); height:100%; width:${Math.min(100, Math.max(0, (count / limit) * 100))}%;"></div>
+          </div>
+          <div style="text-align:right; font-size:11px; color:#6b7280; margin-top:4px;">${rem} remaining</div>
+        </div>
+        <button id="logoutBtn" style="color:#dc2626; justify-content:center; background:#fee2e2; border-radius:6px; width:100%; display:flex; align-items:center; padding:8px 12px; border:none; font-weight:500; cursor:pointer; font-family:inherit;">Logout</button>
       </div>
     </div>
   </div>
@@ -188,6 +207,7 @@ function bindNav() {
     if (ucDrop) ucDrop.classList.remove('open');
   });
   document.getElementById('logoutBtn')?.addEventListener('click', logout);
+  document.getElementById('helpNavBtn')?.addEventListener('click', () => go('/support'));
   // UC discovery: click to toggle (more reliable than hover)
   document.getElementById('ucNavBtn')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -219,7 +239,7 @@ function authPage(mode) {
 <div style="min-height:100vh;background:#f5f4fc;display:flex;flex-direction:column;">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 32px;">
     ${logo()}
-    <span class="auth-help">${ic('headset')} Help &amp; Support</span>
+    <span class="auth-help" style="cursor:pointer;" id="authHelpForgot">${ic('headset')} Help &amp; Support</span>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
     <div style="background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.1);padding:40px 48px;width:460px;max-width:100%;">
@@ -291,7 +311,7 @@ function authPage(mode) {
 <div class="auth-page">
   <div class="auth-topbar">
     <span></span>
-    <span class="auth-help">${ic('headset')} Help &amp; Support</span>
+    <span class="auth-help" style="cursor:pointer;" id="authHelpMain">${ic('headset')} Help &amp; Support</span>
   </div>
   <div class="auth-grid">
     <!-- Left pane -->
@@ -335,6 +355,8 @@ function authPage(mode) {
   document.getElementById('goLogin')?.addEventListener('click', () => go('/login'));
   document.getElementById('goSignup')?.addEventListener('click', () => go('/signup'));
   document.getElementById('forgotLink')?.addEventListener('click', () => go('/forgot-password'));
+  document.getElementById('authHelpMain')?.addEventListener('click', () => go('/support'));
+  document.getElementById('authHelpForgot')?.addEventListener('click', () => go('/support'));
 
   document.getElementById('authForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -610,14 +632,16 @@ function renderDashboard() {
 /* ── Evaluate Form ── */
 
 function evaluateForm() {
-  const rem = Math.max(0, 100 - (state.dashData?.total_evaluations || 0));
+  const limit = state.user?.evaluation_limit ?? 20;
+  const count = state.user?.evaluation_count ?? 0;
+  const rem = Math.max(0, limit - count);
   app.innerHTML = topNav('evals') + `
 <main class="page fade-up">
   <div class="eval-header">
     <div class="eval-title-row">
       <button class="back-btn" id="evalBack">${ic('arrleft')}</button>
       <h1>Evaluate a process</h1>
-      <span class="token-badge"><span class="star">✦</span> ${rem} / 100 evaluations</span>
+      <span class="token-badge"><span class="star">✦</span> ${rem} / ${limit} evaluations remaining</span>
     </div>
     <div class="eval-actions">
       <button class="btn-ghost">${ic('save')} Save as draft</button>
@@ -911,11 +935,15 @@ async function resultsPage(id) {
   const feasLabel = feasScore >= 70 ? 'Easy integration effort' : feasScore >= 40 ? 'Moderate integration effort' : 'Difficult integration effort';
   // Notes from Mistral
   const notes = data.notes || data.additional_notes || recs.notes || recs.additional_notes || '';
+  const isShortlisted = doc.is_shortlisted || false;
 
   app.innerHTML = topNav('evals') + `
 <main class="page fade-up">
-  <div class="ph">
-    <h1><button class="back-btn" onclick="go('/my-evaluations')">${ic('arrleft')}</button> Evaluation results: ${doc.process_name}</h1>
+  <div class="ph" style="display:flex; justify-content:space-between; align-items:center;">
+    <h1 style="margin:0"><button class="back-btn" onclick="go('/my-evaluations')">${ic('arrleft')}</button> Evaluation results: ${doc.process_name}</h1>
+    <button class="btn btn-outline" id="resShortlistBtn" data-status="${isShortlisted}" style="margin-left: 16px;">
+        ${isShortlisted ? '<span style="color:var(--orange)">&#9733;</span> Shortlisted' : '<span style="color:#9ca3af">&#9734;</span> Shortlist'}
+    </button>
   </div>
   <div class="res-summary">
     <div class="score-card purple">
@@ -956,6 +984,21 @@ async function resultsPage(id) {
   ${notes ? `<div class="sec-title">Additional Notes</div><div class="card" style="padding:18px 22px;font-size:13px;line-height:1.7;color:#374151">${notes}</div>` : ''}
 </main>`;
   bindNav();
+
+  document.getElementById('resShortlistBtn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const currentStatus = btn.dataset.status === 'true';
+    if (currentStatus) {
+      alert('This evaluation is already shortlisted.');
+      return;
+    }
+    try {
+      await api('/api/evaluations/shortlist', 'PUT', { evaluation_ids: [id], shortlist_status: true });
+      btn.dataset.status = 'true';
+      btn.innerHTML = '<span style="color:var(--orange)">&#9733;</span> Shortlisted';
+    } catch (err) { alert('Failed to change shortlist status: ' + err.message); }
+  });
 }
 
 function exportXLSX(rows, filename, customCols = null, customHeaders = null) {
@@ -1001,7 +1044,7 @@ async function evaluationsPage() {
 
   function renderEvalPage() {
     document.getElementById('_portalMenu')?.remove();
-    const filtered = state.evalFilter === 'shortlisted' ? rows.filter(r => r.shortlisted) : rows;
+    const filtered = state.evalFilter === 'shortlisted' ? rows.filter(r => r.is_shortlisted) : rows;
     const selCount = state.selectedIds.size;
     const total = filtered.length;
     const perPage = state.evalPerPage;
@@ -1019,9 +1062,9 @@ async function evaluationsPage() {
         const chk = state.selectedIds.has(r.id);
         const dt = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB') : '-';
         const status = (r.status || 'completed').toLowerCase();
-        const statusLabel = status === 'fallback' ? 'Fallback' : status === 'draft' ? 'Draft' : 'Completed';
+        const statusLabel = status === 'fallback' ? 'Fallback' : status === 'draft' ? 'Draft' : status === 'shortlisted' ? 'Shortlisted' : 'Completed';
         return `<tr data-id="${r.id}">
-          <td onclick="event.stopPropagation()"><input type="checkbox" ${chk ? 'checked' : ''} class="sel-cb" data-id="${r.id}" /></td>
+          ${state.evalFilter === 'all' ? `<td onclick="event.stopPropagation()"><input type="checkbox" ${chk ? 'checked' : ''} class="sel-cb" data-id="${r.id}" /></td>` : ''}
           <td><span class="proc-link" title="${r.process_name || ''}">${r.process_name || '-'}</span></td>
           <td>${dt}</td>
           <td>${r.automation_score != null ? `<span class="sdot ${dotClass(an)}">${an}%</span>` : '<span style="color:#9ca3af">-</span>'}</td>
@@ -1029,7 +1072,7 @@ async function evaluationsPage() {
           <td><span class="fit-badge">${r.fitment || '-'}</span></td>
           <td>${r.llm_type ? llmLabel(r.llm_type) : '-'}</td>
           <td><span class="st-badge ${status}">${statusLabel}</span></td>
-          <td onclick="event.stopPropagation()" style="position:relative">
+          <td onclick="event.stopPropagation()" style="position:relative; width: 40px; text-align:right;">
             <button class="ev-more" data-id="${r.id}">&#8943;</button>
           </td>
         </tr>`;
@@ -1047,25 +1090,31 @@ async function evaluationsPage() {
       </select>
     </div>`;
 
+    const numAll = rows.length;
+    const numShort = rows.filter(r => r.is_shortlisted).length;
+
     app.innerHTML = topNav('evals') + `
 <main class="page fade-up">
   <div class="evlist-head">
     <h1>My Evaluations</h1>
     <div class="evlist-actions">
+      ${state.evalFilter === 'all' ? `
       <button class="btn btn-outline" id="cmpBtn">${ic('compare')} Compare <span style="background:#e5e7eb;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:2px">${selCount}</span></button>
+      <button class="btn btn-outline" id="bulkShortlistBtn">${ic('star')} Shortlist <span style="background:#e5e7eb;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:2px">${selCount}</span></button>
       <button class="btn btn-outline" style="color:#dc2626;border-color:#fca5a5" id="bulkDelBtn">${ic('alert')} Delete <span style="background:#fee2e2;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:2px;color:#dc2626">${selCount}</span></button>
+      ` : ''}
       <button class="btn btn-outline" id="exportBtn">${ic('export')} Export</button>
       <button class="btn btn-primary" onclick="window.go('/evaluate')">+ Evaluate a process</button>
     </div>
   </div>
   <div class="filter-tabs">
-    <button class="tab-pill${state.evalFilter === 'all' ? ' on' : ''}" id="tabAll">All (${rows.length})</button>
-    <button class="tab-pill${state.evalFilter === 'shortlisted' ? ' on' : ''}" id="tabShort">Shortlisted (0)</button>
+    <button class="tab-pill${state.evalFilter === 'all' ? ' on' : ''}" id="tabAll">All (${numAll})</button>
+    <button class="tab-pill${state.evalFilter === 'shortlisted' ? ' on' : ''}" id="tabShort">Shortlisted (${numShort})</button>
   </div>
   <div class="table-wrap" id="evalTableWrap">
     <table class="ev-table">
       <thead><tr>
-        <th><input type="checkbox" id="selAll" ${allSelected ? 'checked' : ''} /></th>
+        ${state.evalFilter === 'all' ? `<th><input type="checkbox" id="selAll" ${allSelected ? 'checked' : ''} /></th>` : ''}
         <th>Process name</th><th>Created on</th>
         <th>Automation score</th><th>Feasibility score</th>
         <th>Fitment type</th><th>LLM type</th><th>Status</th><th></th>
@@ -1088,24 +1137,49 @@ async function evaluationsPage() {
     document.getElementById('perPageSel')?.addEventListener('change', e => {
       state.evalPerPage = Number(e.target.value); state.evalPage = 1; renderEvalPage();
     });
-    document.getElementById('cmpBtn').onclick = () => {
-      if (state.selectedIds.size < 2) { alert('Select at least 2 evaluations to compare'); return; }
-      state.compareRows = rows.filter(r => state.selectedIds.has(r.id));
-      go('/compare');
-    };
-    // Bulk delete handler
-    document.getElementById('bulkDelBtn')?.addEventListener('click', async () => {
-      if (state.selectedIds.size === 0) { alert('Select at least 1 evaluation to delete'); return; }
-      if (!confirm(`Delete ${state.selectedIds.size} evaluation(s)? This cannot be undone.`)) return;
-      const ids = [...state.selectedIds];
-      let failed = 0;
-      for (const id of ids) {
-        try { await api(`/api/evaluations/${id}`, 'DELETE'); rows = rows.filter(r => r.id !== id); state.selectedIds.delete(id); }
-        catch { failed++; }
-      }
-      if (failed) alert(`${failed} deletion(s) failed.`);
-      renderEvalPage();
-    });
+
+    if (state.evalFilter === 'all') {
+      document.getElementById('cmpBtn').onclick = () => {
+        if (state.selectedIds.size < 2) { alert('Select at least 2 evaluations to compare'); return; }
+        state.compareRows = rows.filter(r => state.selectedIds.has(r.id));
+        go('/compare');
+      };
+      // Bulk shortlist handler
+      document.getElementById('bulkShortlistBtn')?.addEventListener('click', async () => {
+        if (state.selectedIds.size === 0) { alert('Select at least 1 evaluation to shortlist'); return; }
+        const ids = [...state.selectedIds];
+        const items = rows.filter(r => state.selectedIds.has(r.id));
+        if (items.some(r => r.is_shortlisted)) {
+          alert('This evaluation is already shortlisted.');
+          return;
+        }
+        try {
+          await api('/api/evaluations/shortlist', 'PUT', { evaluation_ids: ids, shortlist_status: true });
+          rows.forEach(r => {
+            if (state.selectedIds.has(r.id)) {
+              r.is_shortlisted = true;
+              r.status = 'Shortlisted';
+            }
+          });
+          state.selectedIds.clear();
+          renderEvalPage();
+        } catch (err) { alert('Shortlist failed: ' + err.message); }
+      });
+      // Bulk delete handler
+      document.getElementById('bulkDelBtn')?.addEventListener('click', async () => {
+        if (state.selectedIds.size === 0) { alert('Select at least 1 evaluation to delete'); return; }
+        if (!confirm(`Delete ${state.selectedIds.size} evaluation(s)? This cannot be undone.`)) return;
+        const ids = [...state.selectedIds];
+        let failed = 0;
+        for (const id of ids) {
+          try { await api(`/api/evaluations/${id}`, 'DELETE'); rows = rows.filter(r => r.id !== id); state.selectedIds.delete(id); }
+          catch { failed++; }
+        }
+        if (failed) alert(`${failed} deletion(s) failed.`);
+        renderEvalPage();
+      });
+    } // End if (state.evalFilter === 'all')
+
     // Select-all: toggle in-place without full re-render
     document.getElementById('selAll')?.addEventListener('change', e => {
       if (e.target.checked) filtered.forEach(r => state.selectedIds.add(r.id));
@@ -1145,7 +1219,10 @@ async function evaluationsPage() {
         menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${rect.left - 80}px;z-index:9999;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:120px;overflow:hidden`;
         menu.innerHTML = `
           <button class="more-item" data-action="view" data-id="${id}">${ic('doc')} View</button>
-          <button class="more-item del" data-action="delete" data-id="${id}">${ic('alert')} Delete</button>`;
+          ${state.evalFilter === 'all' ? `
+          <button class="more-item" data-action="shortlist" data-id="${id}">${ic('star')} Shortlist</button>
+          <button class="more-item del" data-action="delete" data-id="${id}">${ic('alert')} Delete</button>
+          ` : ''}`;
         document.body.appendChild(menu);
         menu.querySelectorAll('.more-item').forEach(item => {
           item.addEventListener('click', async e2 => {
@@ -1153,6 +1230,19 @@ async function evaluationsPage() {
             menu.remove();
             const { action } = item.dataset;
             if (action === 'view') { go(`/results/${id}`); }
+            if (action === 'shortlist') {
+              const row = rows.find(r => r.id === id);
+              if (row.is_shortlisted) {
+                alert('This evaluation is already shortlisted.');
+                return;
+              }
+              try {
+                await api('/api/evaluations/shortlist', 'PUT', { evaluation_ids: [id], shortlist_status: true });
+                row.is_shortlisted = true;
+                row.status = 'Shortlisted';
+                renderEvalPage();
+              } catch (err) { alert('Shortlist failed: ' + err.message); }
+            }
             if (action === 'delete') {
               if (!confirm('Delete this evaluation? This cannot be undone.')) return;
               try {
@@ -1503,11 +1593,108 @@ async function companyPage() {
   });
 }
 
+/* ── Support Page ── */
+function supportPage() {
+  const faqs = [
+    { q: "How does the evaluation process work?", a: "To run an evaluation, click 'Evaluate a process' on the dashboard. You will provide the process name, description, frequency, and related scores. Avagama.ai will then process this information and map it against LLMs and known industry solutions to give you a definitive automation score and feasibility rating." },
+    { q: "How many evaluations do I get after signing up?", a: "By default, new users receive 20 free evaluations to explore the platform. You can track your usage by clicking on your profile icon in the top right corner." },
+    { q: "Why am I unable to run an evaluation?", a: "If you are unable to run an evaluation, please ensure you have filled out all required fields on the evaluation form. If the problem persists, you may have reached your evaluation limit, or our AI service might be temporarily unavailable." },
+    { q: "How do I shortlist an evaluation?", a: "You can shortlist an evaluation by clicking the 'Shortlist' button on the results page of a specific evaluation, or by using the bulk 'Shortlist' button in the 'My Evaluations' tab." },
+    { q: "Where can I see my shortlisted evaluations?", a: "Navigate to the 'My Evaluations' page using the sidebar. There, you can click on the 'Shortlisted' tab to view all evaluations you have marked as shortlisted." },
+    { q: "How do I contact support?", a: "You can write to us directly using the 'Write to us' section on this very page." }
+  ];
+
+  const headerHtml = state.token ? topNav('dash') : `
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#fff;border-bottom:1px solid #e5e7eb;">
+  <div style="cursor:pointer;" onclick="window.go('/login')">${logo()}</div>
+  <span class="fp-back" style="margin:0;" onclick="window.history.back()">${ic('arrleft')} Back</span>
+</div>`;
+
+  app.innerHTML = headerHtml + `
+<main class="page fade-up" style="max-width:800px; margin:0 auto; padding:40px 20px;">
+  <div style="text-align:center; padding:20px 0 40px;">
+    <h1 style="font-size:36px; font-weight:800; display:inline-block;" class="text-gradient">Help & Support</h1>
+    <p style="color:#6b7280; margin-top:12px; font-size:16px;">Find answers to common questions or reach out to our team.</p>
+  </div>
+  
+  <div class="sec-title" style="margin-top:0;">Frequently Asked Questions</div>
+  <div class="faq-list">
+    ${faqs.map((f, i) => `
+    <div class="faq-item">
+      <button class="faq-btn" data-idx="${i}">
+        <span>${f.q}</span>
+        <span class="faq-icon">${ic('chevdown')}</span>
+      </button>
+      <div class="faq-content" id="faq-content-${i}">
+        <p>${f.a}</p>
+      </div>
+    </div>`).join('')}
+  </div>
+
+  <div class="sec-title" style="margin-top:40px;">Write to Us</div>
+  <div class="card" style="padding:24px;">
+    <p style="color:#374151; font-size:14px; margin-bottom:16px; line-height:1.6;">
+      If you are facing any issues or need assistance, please write to us at <a href="mailto:${state.user?.support_email || 'support@avagama.com'}" style="color:var(--purple);font-weight:600;text-decoration:none;">${state.user?.support_email || 'support@avagama.com'}</a>.
+    </p>
+    <a href="mailto:${state.user?.support_email || 'support@avagama.com'}" class="btn btn-primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+      ${ic('mail')} Contact Support
+    </a>
+  </div>
+</main>`;
+  bindNav();
+
+  // Accordion Logic
+  document.querySelectorAll('.faq-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.dataset.idx;
+      const content = document.getElementById(`faq-content-${idx}`);
+      const icon = btn.querySelector('.faq-icon');
+
+      const isOpen = content.classList.contains('open');
+
+      // Close all others
+      document.querySelectorAll('.faq-content').forEach(c => c.classList.remove('open'));
+      document.querySelectorAll('.faq-icon').forEach(i => i.innerHTML = ic('chevdown'));
+      document.querySelectorAll('.faq-btn').forEach(b => b.classList.remove('active'));
+
+      if (!isOpen) {
+        content.classList.add('open');
+        icon.innerHTML = ic('chevup');
+        btn.classList.add('active');
+      }
+    });
+  });
+}
+
+async function fetchUserLimits() {
+  if (!state.token) return;
+  try {
+    const data = await api('/api/auth/me');
+    if (data && data.id) {
+      state.user = data;
+      localStorage.setItem('user', JSON.stringify(data));
+      // Re-render Top_Nav to catch the new counts without disrupting input
+      const topbar = document.querySelector('.topbar');
+      if (topbar) {
+        const temp = document.createElement('div');
+        const activeNav = window.location.pathname.startsWith('/my-evaluations') ? 'evals' : window.location.pathname.startsWith('/compare') || window.location.pathname.startsWith('/results') ? 'evals' : 'dash';
+        temp.innerHTML = topNav(activeNav);
+        topbar.replaceWith(temp.firstElementChild);
+        bindNav();
+      }
+    }
+  } catch (e) { console.error('Failed to sync user limits:', e) }
+}
+
 /* ── Router ── */
 async function render() {
-  resetIdleTimer();
-  const path = location.pathname;
-  if (!state.token && !['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'].includes(path)) return go('/login');
+  const path = window.location.pathname;
+  app.className = '';
+  document.body.className = '';
+
+  fetchUserLimits(); // async refresh of limits in background
+
+  if (!state.token && !['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/support'].includes(path)) return go('/login');
   if (path === '/login') return authPage('login');
   if (path === '/signup') return authPage('signup');
   if (path === '/forgot-password') return authPage('forgot');
@@ -1520,6 +1707,7 @@ async function render() {
   if (path === '/compare') return comparePage();
   if (path === '/use-cases/domain') return domainPage();
   if (path === '/use-cases/company') return companyPage();
+  if (path === '/support') return supportPage();
   if (path.startsWith('/results/')) return resultsPage(path.split('/').pop());
   go('/');
 }

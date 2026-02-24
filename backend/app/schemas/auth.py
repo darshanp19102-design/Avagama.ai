@@ -34,4 +34,7 @@ class UserOut(BaseModel):
     company_name: str
     email: EmailStr
     email_verified: bool
+    evaluation_count: int = 0
+    evaluation_limit: int = 20
+    support_email: str | None = None
     created_at: datetime

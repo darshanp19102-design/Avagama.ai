@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     USE_CASE_AGENT_ID: str
     COMPANY_USE_CASE_AGENT_ID: str
     FRONTEND_URL: str = 'http://localhost:5173'
+    DEFAULT_EVALUATION_LIMIT: int = 20
+    SUPPORT_EMAIL: str = 'support@avagama.com'
     EMAIL_VERIFY_EXPIRE_MINUTES: int = 1440
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587

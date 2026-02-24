@@ -43,8 +43,8 @@ async def dashboard(
     query_all = {'user_id': current_user['id']}
     
     if shortlisted:
-        query['shortlisted'] = True
-        query_all['shortlisted'] = True
+        query['is_shortlisted'] = True
+        query_all['is_shortlisted'] = True
 
     cursor_ranged = collection('evaluations').find(query)
     total_all = await collection('evaluations').count_documents(query_all)
